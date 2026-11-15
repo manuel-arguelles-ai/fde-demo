@@ -7,7 +7,7 @@
 
 **Build de cierre del career track [Forward Deployed Engineer](https://app.datacamp.com/learn/career-tracks/forward-deployed-engineer) (DataCamp, 17 cursos).** Un bot de soporte para una empresa ficticia ("Nix Cloud") que ejercita el stack completo del track: **RAG → gate anti-alucinación → LangGraph con aristas condicionales → FastAPI con streaming** — corriendo en producción.
 
-🌐 **Demo en vivo:** [fde.analizodatos.com](https://fde.analizodatos.com) · **Diagrama interactivo:** [diagrama archify](https://manuelarguelles.github.io/fde-demo/)
+🌐 **Demo en vivo:** [fde.analizodatos.com](https://fde.analizodatos.com) · **Diagrama interactivo:** [diagrama archify](https://manuel-arguelles-ai.github.io/fde-demo/)
 
 ---
 
@@ -45,7 +45,7 @@ pregunta ──► Retriever BM25 (k=3) ──► Gate LLM ¿contexto alcanza?
 
 ## Diagrama
 
-Interactivo (con animación de flujo y 2 vistas guiadas): **[abrir el diagrama](https://manuelarguelles.github.io/fde-demo/)** — generado con [Archify](https://github.com/tt-a1i/archify) (`docs/diagrama.spec.json`).
+Interactivo (con animación de flujo y 2 vistas guiadas): **[abrir el diagrama](https://manuel-arguelles-ai.github.io/fde-demo/)** — generado con [Archify](https://github.com/tt-a1i/archify) (`docs/diagrama.spec.json`).
 
 ![diagrama](assets/diagrama.png)
 

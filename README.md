@@ -1,96 +1,64 @@
-# fde-demo — Bot de soporte Forward Deployed Engineer 🤖
+# fde-demo — Build del track "Forward Deployed Engineer" (DataCamp)
 
-[![DataCamp](https://img.shields.io/badge/DataCamp-Forward%20Deployed%20Engineer-0092d0?logo=datacamp&logoColor=white)](https://app.datacamp.com/learn/career-tracks/forward-deployed-engineer)
-![Python](https://img.shields.io/badge/Python-3.12-3776ab?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph-1c3c3c)
+Bot de soporte N1 que ejercita el stack completo del track (15-nov-2026).
 
-**Build de cierre del career track [Forward Deployed Engineer](https://app.datacamp.com/learn/career-tracks/forward-deployed-engineer) (DataCamp, 17 cursos).** Un bot de soporte para una empresa ficticia ("Nix Cloud") que ejercita el stack completo del track: **RAG → gate anti-alucinación → LangGraph con aristas condicionales → FastAPI con streaming** — corriendo en producción.
+## Qué demuestra
 
-🌐 **Demo en vivo:** [fde.analizodatos.com](https://fde.analizodatos.com) · **Diagrama interactivo:** [diagrama archify](https://manuel-arguelles-ai.github.io/fde-demo/)
-
----
-
-## Qué hace
-
-Un usuario pregunta en el chat; el sistema recupera contexto de una base de conocimiento, un **gate LLM** verifica que el contexto alcanza, y solo entonces responde — **citando la sección** del documento usada. Si el contexto no alcanza dos veces, escala: un **function calling real** crea un ticket de ingeniería con los argumentos que el propio LLM decide.
-
-```
-pregunta ──► Retriever BM25 (k=3) ──► Gate LLM ¿contexto alcanza?
-                                          │
-                     ┌── sí ──────────────┤
-                     ▼                    │ NO (1º intento)
-              Generador con citas         ▼
-                     │              Reformular + re-retrieve
-                     ▼                    │ (feedback loop ×1)
-              SSE token a token           │ NO (2º intento)
-                                          ▼
-                                   Escalado → tool create_ticket
-                                            └──► tickets.jsonl
-```
-
-| Componente | Qué es |
+| Curso del track | Dónde se aplica acá |
 |---|---|
-| `app.py` | FastAPI (`/chat` JSON + `/chat/stream` SSE) que compila el `StateGraph` de LangGraph |
-| Retriever | **BM25 two-stage** implementado a mano sobre `docs/kb.md` (decisión documentada: sin embeddings para no sumar un proveedor; el swap a un `VectorStoreRetriever` es drop-in) |
-| Gate | LLM-as-judge (temp 0) — **arista condicional** + **feedback loop** de LangGraph |
-| Escalado | `@tool create_ticket` con `bind_tools`: el LLM decide los argumentos del ticket |
-| LLM | Groq · `openai/gpt-oss-120b` (interfaz OpenAI-compatible) |
-| Eval | `eval.py` con dataset de 9 casos: **correctness 9/9 · groundedness 6/6** |
-| Deploy | Dockerfile · Traefik + Let's Encrypt en VPS (Hetzner) |
+| 1/2. OpenAI API + prompts | `ChatGroq` (interfaz OpenAI-compatible); system prompt con reglas de citación |
+| 3. Seguridad y ética | Gate anti-alucinación: sin doc relevante no hay respuesta |
+| 4. SW principles | Type hints, módulos separados, docstrings |
+| 5. Responses API | (equivalencia: estado del grafo reemplaza statefulness del provider) |
+| 6. LLMOps | `/health` + logs de intentos + decisiones trazables |
+| 7. Fundamentos app LLM | app end-to-end: retrieval → validación → generación → API |
+| 9. RAG | BM25 two-stage sobre `docs/kb.md`, chunks por sección |
+| 8. LLM Application Evaluation | `eval.py` + `eval_set.json`: dataset de 9 casos, métricas correctness (9/9 = 100%) y groundedness con cita esperada (6/6) |
+| 10. Tool use | function calling real: `create_ticket` (tool de LangChain) en el nodo de escalado, args decididos por el LLM |
+| 11. Agentic Systems with LangGraph | `StateGraph` con nodos retrieve→gate→generate/escalate, **arista condicional** + **feedback loop** (1 re-retrieve antes de escalar) |
+| 15/16. FastAPI | `POST /chat` (JSON) y `POST /chat/stream` (SSE) token-a-token; **middleware de auth** (`X-API-Key`), **logging JSONL estructurado** (`logs/app.jsonl`), **Dockerfile** |
+| 13/14. Git | build versionado en repo git (commits) |
 
-## Vista del chat
+## Arquitectura
 
-![chat](assets/chat.png)
+```
+question ─► retrieve (BM25 k=3) ─► gate (LLM: ¿suficiente contexto?)
+                                      ├─ sí ─► generate (citas [Sección]) ─► END
+                                      └─ no (1º intento) ─► retrieve (loop)
+                                      └─ no (2º intento) ─► escalate ─► END
+```
 
-## Diagrama
+Decisión documentada: el retriever es BM25 lexical (no embeddings) para no sumar un
+provider más; la interfaz es drop-in — reemplazar `retrieve()` por un
+`VectorStoreRetriever` no toca el grafo.
 
-Interactivo (con animación de flujo y 2 vistas guiadas): **[abrir el diagrama](https://manuel-arguelles-ai.github.io/fde-demo/)** — generado con [Archify](https://github.com/tt-a1i/archify) (`docs/diagrama.spec.json`).
-
-![diagrama](assets/diagrama.png)
-
-## Cómo correrlo
+## Run
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-export GROQ_API_KEY=...
-python app.py                    # http://127.0.0.1:8899
-python eval.py                   # eval set (correctness + groundedness)
-# o con Docker:
-docker build -t fde-demo . && docker run -p 8899:8899 -e GROQ_API_KEY=... fde-demo
+export GROQ_API_KEY=...          # uv venv ya está en builds/fde-demo/.venv
+.venv/bin/python app.py          # http://127.0.0.1:8899
+.venv/bin/python eval.py         # eval set (correctness + groundedness)
+# o docker: docker build -t fde-demo . && docker run -p 8899:8899 -e GROQ_API_KEY=... fde-demo
 ```
 
-> Con `FDE_API_KEY` seteada, los endpoints `/chat*` exigen el header `X-API-Key`.
+> Con `FDE_API_KEY` seteada, `/chat*` exige header `X-API-Key`.
 
-## Cursos del track aplicados aquí
-
-| Curso del track | Dónde vive en el código |
-|---|---|
-| 1-2. OpenAI API + Prompt Engineering | `ChatGroq` (interfaz OpenAI-compatible) · system prompt con reglas de citación |
-| 3. AI Safety and Ethics | Gate anti-alucinación: sin contexto no hay respuesta |
-| 4. Software Engineering Principles | Type hints, módulos, docstrings |
-| 6. LLMOps Concepts | `/health`, logs JSONL, decisiones trazables |
-| 7. LLM Application Fundamentals | App end-to-end: retrieval → validación → generación → API |
-| 8. LLM Application Evaluation (LangSmith) | `eval.py` + `eval_set.json` (correctness / groundedness) |
-| 9. RAG with LangChain | Chunking por secciones + BM25 two-stage |
-| 10. LLM Tool Use | `create_ticket` con `bind_tools` — args decididos por el LLM |
-| 11. Agentic Systems with LangGraph | `StateGraph` con arista condicional + feedback loop |
-| 13-14. Git | Historia en commits de este repo |
-| 15-16. FastAPI + Deploying AI to Production | SSE streaming, middleware de auth, logging, Docker |
-| 17. Communicating Data Insights | Este README y el diagrama 🙃 |
-
-*Declarados por diseño (fuera del alcance del demo): MCP (curso 12) y checkpoints/human-in-the-loop (11 avanzado).*
-
-## Evaluación
-
-```
-Correctness: 9/9 (100%) — in-KB responde, out-of-KB escala
-Groundedness: 6/6 (100%) — cada respuesta cita la sección esperada
+```bash
+curl -X POST :8899/chat -H 'Content-Type: application/json' \
+  -d '{"question":"me filtraron la api key en un repo"}'
+curl -N -X POST :8899/chat/stream -H 'Content-Type: application/json' \
+  -d '{"question":"cuál es el rate limit del plan Pro?"}'
 ```
 
-Preguntas como *"¿cómo hago un asado a la cruz?"* no generan alucinaciones: el gate las rechaza dos veces y el sistema crea un ticket `ESC-XXXXXXXX` persistido en `tickets.jsonl`.
+## Verificado (15-nov-2026)
+- Pregunta in-KB → respuesta con citas `[Autenticación]`, fuentes listadas.
+- Pregunta out-of-KB ("cómo hago un asado") → gate rechaza 2 veces → **tool call `create_ticket`** (function calling) → ticket `ESC-XXXXXXXX` en `tickets.jsonl`.
+- SSE streaming token-a-token + bloque `final` con sources.
+- Auth: con `FDE_API_KEY` seteada, sin header `X-API-Key` → 401; con header → 200.
+- `eval.py`: **correctness 9/9 (100%), groundedness 6/6**.
 
----
+## Gaps declarados (por diseño del demo)
+- **MCP (curso 12)** y **checkpoints/human-in-the-loop (curso 11)**: no implementados acá; quedan como server/checkpointer aparte.
+- LangSmith real (tracing UI) reemplazado por eval offline + logs JSONL: misma métrica, sin account externo.
+- Git (13/14): cubierto — el build vive en repo git con historia (2 commits).
 
-*Proyecto de cierre del pipeline pf (Blitz → Brief → Build → Skill) · 15-nov-2026.*

@@ -23,6 +23,7 @@ from typing import Annotated, Literal, TypedDict
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+import gate_jev
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
@@ -116,12 +117,18 @@ class State(TypedDict):
     answer: str
     attempts: int
     escalated: bool
+    jev: dict | None
 
 def retrieve_node(state: State) -> dict:
     return {"docs": retrieve(state["question"]), "attempts": state.get("attempts", 0)}
 
 def gate_node(state: State) -> dict:
-    """Gate: ¿los docs recuperados sirven para responder? (arista condicional)"""
+    """Gate LLM-as-judge + segunda opinión Jev (opcional, defense in depth).
+
+    Si JEV_API_KEY está seteada y el gate LLM dice 'suficiente', se consulta
+    Jev (decisión estructurada con confianza). Si Jev disiente, el estado lo
+    registra y el router lo trata como 'no relevante' → loop de reformulación.
+    """
     if not state["docs"]:
         return {"relevant": False}
     ctx = "\n\n".join(f"[{d['title']}]\n{d['body']}" for d in state["docs"])
@@ -129,7 +136,18 @@ def gate_node(state: State) -> dict:
         SystemMessage(content="Responde SOLO si o no, minúscula."),
         HumanMessage(content=f"Pregunta: {state['question']}\n\n¿Este contexto permite responder con fidelidad?\n\n{ctx}"),
     ])
-    return {"relevant": msg.content.strip().lower().startswith("s")}
+    relevant = msg.content.strip().lower().startswith("s")
+    jev_info = None
+    if relevant and gate_jev.available():
+        try:
+            jev = gate_jev.classify(state["question"], ctx)
+            jev_info = {"choice": jev["choice"], "confidence": round(jev["confidence"], 2)}
+            log_event("jev_gate", choice=jev["choice"], confidence=jev_info["confidence"], question=state["question"][:60])
+            if jev["choice"] != "suficiente":
+                relevant = False  # segunda opinión en contra → no generar
+        except Exception as e:  # Jev caído no bloquea el demo
+            log_event("jev_gate_error", error=str(e)[:120])
+    return {"relevant": relevant, "jev": jev_info}
 
 def generate_node(state: State) -> dict:
     ctx = "\n\n".join(f"[{d['title']}]\n{d['body']}" for d in state["docs"])

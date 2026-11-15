@@ -96,7 +96,7 @@
       "id": "motor",
       "type": "backend",
       "label": "Motor LangGraph",
-      "sublabel": "BM25 → gate → generar",
+      "sublabel": "BM25 → gate LLM+Jev",
       "stage": 2,
       "row": 2,
       "tag": "StateGraph"
@@ -342,6 +342,7 @@
       "dot": "amber",
       "title": "LangGraph · decisiones",
       "items": [
+        "Gate en dos niveles: judge LLM + Jev (segunda opinión opcional, JEV_API_KEY)",
         "StateGraph: retrieve → gate → generate / reformulate / escalate",
         "Feedback loop: un re-retrieve antes de escalar (falla 2 veces → ticket)",
         "Escalado con function calling real: el LLM decide los args del tool create_ticket"

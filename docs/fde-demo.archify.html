@@ -5237,15 +5237,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="fine" x="530" y="289" class="t-backend" font-size="7" text-anchor="middle">puerto 8899</text>
         </g>
 
-        <g id="node-motor" data-node-id="motor" data-node-label="Motor LangGraph" tabindex="0" role="button" aria-label="Focus Motor LangGraph, BM25 → gate → generar, 03 / API + Motor LangGraph" aria-pressed="false" data-node-kind="backend" data-node-sublabel="BM25 → gate → generar" data-node-tag="StateGraph" data-node-context="03 / API + Motor LangGraph">
-          <title>Motor LangGraph · BM25 → gate → generar · 03 / API + Motor LangGraph · StateGraph</title>
+        <g id="node-motor" data-node-id="motor" data-node-label="Motor LangGraph" tabindex="0" role="button" aria-label="Focus Motor LangGraph, BM25 → gate LLM+Jev, 03 / API + Motor LangGraph" aria-pressed="false" data-node-kind="backend" data-node-sublabel="BM25 → gate LLM+Jev" data-node-tag="StateGraph" data-node-context="03 / API + Motor LangGraph">
+          <title>Motor LangGraph · BM25 → gate LLM+Jev · 03 / API + Motor LangGraph · StateGraph</title>
           <rect x="474" y="356" width="112" height="58" rx="6" class="c-mask"/>
           <rect x="474" y="356" width="112" height="58" rx="6" class="c-backend" data-animate="node" style="--step:4" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(480 362) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="530" y="377" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Motor LangGraph</text>
-          <text data-detail="context" x="530" y="393" class="t-muted" font-size="7" text-anchor="middle">BM25 → gate → generar</text>
+          <text data-detail="context" x="530" y="393" class="t-muted" font-size="7" text-anchor="middle">BM25 → gate LLM+Jev</text>
         <text data-detail="fine" x="530" y="403" class="t-backend" font-size="7" text-anchor="middle">StateGraph</text>
         </g>
 
@@ -5585,6 +5585,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <h3>LangGraph · decisiones</h3>
         </div>
         <ul>
+          <li>&bull; Gate en dos niveles: judge LLM + Jev (segunda opinión opcional, JEV_API_KEY)</li>
           <li>&bull; StateGraph: retrieve → gate → generate / reformulate / escalate</li>
           <li>&bull; Feedback loop: un re-retrieve antes de escalar (falla 2 veces → ticket)</li>
           <li>&bull; Escalado con function calling real: el LLM decide los args del tool create_ticket</li>

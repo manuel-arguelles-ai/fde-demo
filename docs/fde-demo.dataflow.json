@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "fde-demo — Build del track DataCamp “Forward Deployed Engineer”",
+    "output": "fde-demo.archify.html",
+    "viewBox": [
+      1180,
+      820
+    ],
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "standard",
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "Ruta feliz (in-KB)",
+        "focus": [
+          "usuario",
+          "dns",
+          "traefik",
+          "chatapi",
+          "motor",
+          "groq",
+          "kb"
+        ],
+        "note": "Pregunta con contexto suficiente: BM25 k=3 → gate → generador con citas → SSE."
+      },
+      {
+        "id": "escalation",
+        "label": "Escalado (out-of-KB)",
+        "focus": [
+          "motor",
+          "escalate",
+          "tickets"
+        ],
+        "note": "Gate falla dos veces → function calling create_ticket → tickets.jsonl."
+      }
+    ]
+  },
+  "stages": [
+    {
+      "label": "Usuarios"
+    },
+    {
+      "label": "Edge · VPS Hetzner (UE)"
+    },
+    {
+      "label": "API + Motor LangGraph"
+    },
+    {
+      "label": "Estado + observabilidad"
+    },
+    {
+      "label": "Servicios externos"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "usuario",
+      "type": "frontend",
+      "label": "Usuario",
+      "sublabel": "navegador",
+      "stage": 0,
+      "row": 1,
+      "tag": "manual"
+    },
+    {
+      "id": "dns",
+      "type": "security",
+      "label": "Cloudflare DNS",
+      "sublabel": "A → 167.233.82.133",
+      "stage": 1,
+      "row": 0,
+      "tag": "sin proxy CF"
+    },
+    {
+      "id": "traefik",
+      "type": "security",
+      "label": "Traefik",
+      "sublabel": "TLS · Let's Encrypt",
+      "stage": 1,
+      "row": 2,
+      "tag": "dokploy-network"
+    },
+    {
+      "id": "chatapi",
+      "type": "backend",
+      "label": "FastAPI fde-demo",
+      "sublabel": "landing · /chat · SSE",
+      "stage": 2,
+      "row": 1,
+      "tag": "puerto 8899"
+    },
+    {
+      "id": "motor",
+      "type": "backend",
+      "label": "Motor LangGraph",
+      "sublabel": "BM25 → gate → generar",
+      "stage": 2,
+      "row": 2,
+      "tag": "StateGraph"
+    },
+    {
+      "id": "escalate",
+      "type": "backend",
+      "label": "Escalado",
+      "sublabel": "→ tool create_ticket",
+      "stage": 2,
+      "row": 3,
+      "tag": "function calling"
+    },
+    {
+      "id": "kb",
+      "type": "database",
+      "label": "docs/kb.md",
+      "sublabel": "corpus · 6 chunks",
+      "stage": 3,
+      "row": 0,
+      "tag": "vector swap drop-in"
+    },
+    {
+      "id": "logs",
+      "type": "database",
+      "label": "logs/app.jsonl",
+      "sublabel": "requests · latencia",
+      "stage": 3,
+      "row": 2,
+      "tag": "capa LLMOps"
+    },
+    {
+      "id": "tickets",
+      "type": "database",
+      "label": "tickets.jsonl",
+      "sublabel": "escalados ESC-XXXXXXXX",
+      "stage": 3,
+      "row": 3,
+      "tag": "append"
+    },
+    {
+      "id": "groq",
+      "type": "external",
+      "label": "Groq · gpt-oss-120b",
+      "sublabel": "gate + gen + tools",
+      "stage": 4,
+      "row": 1,
+      "tag": "key /root/.env"
+    }
+  ],
+  "flows": [
+    {
+      "from": "usuario",
+      "to": "dns",
+      "label": "HTTPS",
+      "classification": "público",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelAt": [
+        216,
+        110
+      ],
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          216,
+          271
+        ],
+        [
+          216,
+          157
+        ]
+      ]
+    },
+    {
+      "from": "dns",
+      "to": "traefik",
+      "label": "resolución",
+      "classification": "A record",
+      "route": "straight",
+      "labelAt": [
+        250,
+        340
+      ]
+    },
+    {
+      "from": "traefik",
+      "to": "chatapi",
+      "label": "Host header",
+      "classification": "dokploy-network",
+      "variant": "emphasis",
+      "route": "straight",
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          422,
+          385
+        ],
+        [
+          422,
+          271
+        ]
+      ],
+      "labelAt": [
+        422,
+        470
+      ]
+    },
+    {
+      "from": "chatapi",
+      "to": "motor",
+      "label": "pregunta",
+      "classification": "pipeline",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelAt": [
+        530,
+        225
+      ]
+    },
+    {
+      "from": "motor",
+      "to": "kb",
+      "label": "BM25 k=3",
+      "classification": "read-only",
+      "route": "straight",
+      "labelAt": [
+        637,
+        225
+      ],
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          637,
+          385
+        ],
+        [
+          637,
+          157
+        ]
+      ]
+    },
+    {
+      "from": "motor",
+      "to": "groq",
+      "label": "gate · generación · tools",
+      "classification": "LLM",
+      "route": "straight",
+      "labelAt": [
+        800,
+        214
+      ],
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          637,
+          385
+        ],
+        [
+          637,
+          214
+        ],
+        [
+          960,
+          214
+        ]
+      ]
+    },
+    {
+      "from": "motor",
+      "to": "chatapi",
+      "label": "respuesta SSE",
+      "classification": "token a token",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelAt": [
+        530,
+        330
+      ]
+    },
+    {
+      "from": "motor",
+      "to": "escalate",
+      "label": "2º fallo del gate",
+      "classification": "arista condicional",
+      "route": "straight",
+      "labelAt": [
+        600,
+        440
+      ]
+    },
+    {
+      "from": "escalate",
+      "to": "tickets",
+      "label": "function calling",
+      "classification": "write",
+      "variant": "emphasis",
+      "route": "straight"
+    },
+    {
+      "from": "chatapi",
+      "to": "logs",
+      "label": "eventos",
+      "classification": "observabilidad",
+      "route": "straight",
+      "labelAt": [
+        800,
+        310
+      ],
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          637,
+          271
+        ],
+        [
+          637,
+          330
+        ],
+        [
+          745,
+          330
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Ruta feliz",
+      "items": [
+        "RAG lexical: BM25 two-stage sobre docs/kb.md (k=3); swap a vector store es drop-in",
+        "Gate anti-alucinación (LLM temp 0): sin contexto suficiente no se genera respuesta",
+        "Generador responde en español citando la sección [Sección] usada"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "LangGraph · decisiones",
+      "items": [
+        "StateGraph: retrieve → gate → generate / reformulate / escalate",
+        "Feedback loop: un re-retrieve antes de escalar (falla 2 veces → ticket)",
+        "Escalado con function calling real: el LLM decide los args del tool create_ticket"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "LLMOps y despliegue",
+      "items": [
+        "Eval offline con eval_set.json: correctness 9/9 · groundedness 6/6",
+        "Auth por API key (FDE_API_KEY) + logs JSONL estructurados con latencia",
+        "Docker en VPS Hetzner tras Traefik (TLS Let's Encrypt) · redeploy: bash /root/deploy-fde.sh"
+      ]
+    }
+  ]
+}

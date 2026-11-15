@@ -1,0 +1,11 @@
+[
+  {"question": "me quedó filtrada la API key en un repo, qué hago?", "expect": "answer", "must_cite": "Autenticación"},
+  {"question": "cuál es el rate limit del plan Pro?", "expect": "answer", "must_cite": "Límites de la API"},
+  {"question": "qué pasa si mi webhook no responde en 5 segundos?", "expect": "answer", "must_cite": "Webhooks"},
+  {"question": "qué significa el error 409 version_conflict?", "expect": "answer", "must_cite": "Errores comunes"},
+  {"question": "cuánto cuesta el plan Enterprise y qué incluye?", "expect": "answer", "must_cite": "Plan y precios"},
+  {"question": "qué SLA tiene el plan Pro y cómo reclamo créditos?", "expect": "answer", "must_cite": "SLA y status"},
+  {"question": "cómo hago un asado a la cruz?", "expect": "escalate"},
+  {"question": "qué tiempo hace en Lima hoy?", "expect": "escalate"},
+  {"question": "cómo configuro SSO en el plan Starter?", "expect": "escalate"}
+]
